@@ -71,7 +71,10 @@ android {
         versionName = "1.0"
         multiDexEnabled = true
         
-        buildConfigField("String", "IAGO_BACKEND_URL", "\"http://localhost:8081\"")
+        val backendUrl = providers.gradleProperty("IAGO_BACKEND_URL")
+            .orElse("https://iago-backend.azurewebsites.net")
+            .get()
+        buildConfigField("String", "IAGO_BACKEND_URL", "\"$backendUrl\"")
     }
     
     buildFeatures {
@@ -86,6 +89,8 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            // Assina release com debug keystore para permitir instalação local.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

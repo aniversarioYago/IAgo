@@ -24,12 +24,11 @@
             // Desenvolvimento local
             window.IAGO_BACKEND_URL = "http://localhost:8081";
         } else if (hostname.includes("github.io")) {
-            // GitHub Pages - usar backend remoto
-            // TODO: Configure a URL do backend remoto quando disponível
-            window.IAGO_BACKEND_URL = "http://localhost:8081";
+            // GitHub Pages sempre usa backend remoto em HTTPS
+            window.IAGO_BACKEND_URL = "https://iago-backend.azurewebsites.net";
         } else {
-            // Outro servidor - tentar localhost primeiro
-            window.IAGO_BACKEND_URL = "http://localhost:8081";
+            // Outros hosts em produção também usam backend remoto
+            window.IAGO_BACKEND_URL = "https://iago-backend.azurewebsites.net";
         }
 
         console.log("🤖 IAgo Backend URL:", window.IAGO_BACKEND_URL);

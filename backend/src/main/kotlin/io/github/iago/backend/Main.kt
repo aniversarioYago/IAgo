@@ -10,6 +10,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -23,7 +24,6 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import io.ktor.util.logging.error
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("IAgoBackend")
@@ -89,10 +89,9 @@ fun Application.module() {
                 return@post
             }
 
-            val result = runCatching {
+            try {
                 logger.info("Enviando request ao Gemini: $message")
                 
-                // Criar contents com o sistema prompt como primeiro conteúdo
                 val contents = listOf(
                     GeminiContent(
                         role = "user",
@@ -112,21 +111,15 @@ fun Application.module() {
                     "https://generativelanguage.googleapis.com/$API_VERSION/models/$DEFAULT_MODEL:generateContent?key=$apiKey",
                 ) {
                     contentType(ContentType.Application.Json)
-                    setBody(
-                        GeminiGenerateContentRequest(
-                            contents = contents,
-                        ),
-                    )
+                    setBody(GeminiGenerateContentRequest(contents = contents))
                 }.body<GeminiGenerateContentResponse>()
 
                 logger.info("Resposta Gemini recebida: $response")
-                extractModelReply(response) ?: error("Resposta vazia do Gemini.")
-            }
-
-            result.onSuccess { reply ->
+                val reply = extractModelReply(response) ?: error("Resposta vazia do Gemini.")
+                
                 logger.info("Sucesso: $reply")
                 call.respond(ChatResponse(reply = reply, error = null))
-            }.onFailure { error ->
+            } catch (error: Exception) {
                 logger.error("Erro: ${error.message}")
                 call.respond(HttpStatusCode.BadGateway, ChatResponse(reply = "", error = error.message ?: "Falha no backend."))
             }
@@ -155,7 +148,6 @@ private fun isOriginAllowed(origin: String, allowedOrigins: Set<String>): Boolea
 }
 
 private fun extractModelReply(response: GeminiGenerateContentResponse): String? {
-    // Check if there's an error from the Gemini API
     if (response.error != null) {
         error("Erro da API Gemini: ${response.error.message} (${response.error.status})")
     }
@@ -216,26 +208,4 @@ data class GeminiError(
 data class GeminiCandidate(
     val content: GeminiContent? = null,
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
