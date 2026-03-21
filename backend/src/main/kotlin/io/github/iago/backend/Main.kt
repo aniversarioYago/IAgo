@@ -30,6 +30,9 @@ private val logger = LoggerFactory.getLogger("IAgoBackend")
 
 private const val DEFAULT_MODEL = "gemini-2.5-flash"
 private const val API_VERSION = "v1"
+private const val SYSTEM_INSTRUCTION = "Você é um assistente amigável e útil chamado IAgo. " +
+    "Sempre responda em português (Brasil), a menos que o usuário peça explicitamente uma resposta em outro idioma. " +
+    "Seja conciso, claro e prestativo em suas respostas."
 
 private val json = Json {
     ignoreUnknownKeys = true
@@ -88,18 +91,30 @@ fun Application.module() {
 
             val result = runCatching {
                 logger.info("Enviando request ao Gemini: $message")
+                
+                // Criar contents com o sistema prompt como primeiro conteúdo
+                val contents = listOf(
+                    GeminiContent(
+                        role = "user",
+                        parts = listOf(GeminiPart(text = SYSTEM_INSTRUCTION)),
+                    ),
+                    GeminiContent(
+                        role = "model",
+                        parts = listOf(GeminiPart(text = "Entendi. Vou sempre responder em português Brasil.")),
+                    ),
+                    GeminiContent(
+                        role = "user",
+                        parts = listOf(GeminiPart(text = message)),
+                    ),
+                )
+                
                 val response = httpClient.post(
                     "https://generativelanguage.googleapis.com/$API_VERSION/models/$DEFAULT_MODEL:generateContent?key=$apiKey",
                 ) {
                     contentType(ContentType.Application.Json)
                     setBody(
                         GeminiGenerateContentRequest(
-                            contents = listOf(
-                                GeminiContent(
-                                    role = "user",
-                                    parts = listOf(GeminiPart(text = message)),
-                                ),
-                            ),
+                            contents = contents,
                         ),
                     )
                 }.body<GeminiGenerateContentResponse>()
@@ -199,6 +214,16 @@ data class GeminiError(
 data class GeminiCandidate(
     val content: GeminiContent? = null,
 )
+
+
+
+
+
+
+
+
+
+
 
 
 
