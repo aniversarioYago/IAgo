@@ -15,6 +15,12 @@
                           repeatCount="indefinite"/>
     </circle>
 </svg>
+<script>
+    (function() {
+        // Backend sempre em porta 8081 na mesma máquina
+        window.IAGO_BACKEND_URL = "http://localhost:8081";
+    })();
+</script>
 <script type="application/javascript" src="composeApp.js"></script>
 </body>
 </html>
