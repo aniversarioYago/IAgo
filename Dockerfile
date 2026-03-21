@@ -1,17 +1,29 @@
-FROM eclipse-temurin:21-jdk
+# Build stage
+FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /app
 
-# Copiar gradle e source
+# Copy source and gradle
 COPY . .
 
-# Executar o build do backend
+# Build backend JAR
 RUN chmod +x gradlew && \
-    ./gradlew backend:build -x test --no-daemon
+    ./gradlew backend:build -x test --no-daemon && \
+    mkdir -p /app/backend-dist && \
+    cp backend/build/libs/backend.jar /app/backend-dist/
 
-# Entrypoint
+# Runtime stage - minimal image
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+# Copy only the built JAR from builder
+COPY --from=builder /app/backend-dist/backend.jar .
+
 EXPOSE 8080
+
 ENV PORT=8080
 
-CMD ["java", "-jar", "backend/build/libs/backend.jar"]
+CMD ["java", "-jar", "backend.jar"]
+
 
