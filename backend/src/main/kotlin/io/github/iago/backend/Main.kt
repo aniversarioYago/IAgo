@@ -149,7 +149,9 @@ private fun isOriginAllowed(origin: String, allowedOrigins: Set<String>): Boolea
     if (origin in allowedOrigins) return true
     return origin.startsWith("http://localhost:") ||
         origin.startsWith("http://127.0.0.1:") ||
-        origin.startsWith("http://0.0.0.0:")
+        origin.startsWith("http://0.0.0.0:") ||
+        origin.startsWith("https://aniversarioyago.github.io") ||
+        origin.contains("github.io")
 }
 
 private fun extractModelReply(response: GeminiGenerateContentResponse): String? {

@@ -17,8 +17,23 @@
 </svg>
 <script>
     (function() {
-        // Backend sempre em porta 8081 na mesma máquina
-        window.IAGO_BACKEND_URL = "http://localhost:8081";
+        // Detectar ambiente automaticamente
+        const hostname = window.location.hostname;
+
+        if (hostname === "localhost" || hostname === "127.0.0.1") {
+            // Desenvolvimento local
+            window.IAGO_BACKEND_URL = "http://localhost:8081";
+        } else if (hostname.includes("github.io")) {
+            // GitHub Pages - usar backend remoto
+            // Certifique-se de que o backend está rodando em um servidor remoto
+            // Exemplo: https://seu-servidor.com:8081 ou https://api.seu-servidor.com
+            window.IAGO_BACKEND_URL = "http://localhost:8081"; // TODO: Alterar para URL remota
+        } else {
+            // Outro servidor - tentar localhost primeiro
+            window.IAGO_BACKEND_URL = "http://localhost:8081";
+        }
+
+        console.log("🤖 IAgo Backend URL:", window.IAGO_BACKEND_URL);
     })();
 </script>
 <script type="application/javascript" src="composeApp.js"></script>
