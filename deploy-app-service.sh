@@ -9,30 +9,25 @@ cd /home/kayque/Repos/IAgo
 echo "🚀 DEPLOY IAgo Backend no Azure App Service"
 echo "============================================"
 echo ""
-# 1. Build local do JAR
-echo "📦 Compilando JAR do backend..."
-./gradlew backend:build -x test --no-daemon -q
-echo "✅ JAR compilado: backend/build/libs/backend.jar"
+# 1. Build local da distribuição completa (inclui libs em runtime)
+echo "📦 Compilando distribuição do backend..."
+./gradlew :backend:installDist -x test --no-daemon -q
+echo "✅ Distribuição gerada em: backend/build/install/backend"
 echo ""
 # 2. Preparar deployment
 echo "📋 Preparando arquivos para deploy..."
 mkdir -p appservice-deploy
+rm -rf appservice-deploy/*
 cd appservice-deploy
-# Copiar JAR
-cp ../backend/build/libs/backend.jar .
-echo "backend.jar copied"
-# Criar startup.sh
-cat > startup.sh << 'STARTUP'
-#!/bin/bash
-java -jar backend.jar
-STARTUP
-chmod +x startup.sh
-echo "startup.sh created"
+# Copiar distribuição completa (bin + lib)
+cp -R ../backend/build/install/backend ./backend
+chmod +x ./backend/bin/backend
+echo "backend distribution copied"
 # Criar zip para deploy
 if command -v zip >/dev/null 2>&1; then
   zip -r ../iago-deploy.zip . -q
 else
-  python3 -m zipfile -c ../iago-deploy.zip backend.jar startup.sh
+  python3 -m zipfile -c ../iago-deploy.zip backend
 fi
 echo "iago-deploy.zip created"
 cd ..
@@ -89,15 +84,17 @@ echo "✅ Variáveis configuradas"
 az webapp config set \
   --name iago-backend \
   --resource-group iago-rg \
-  --startup-file "bash startup.sh" >/dev/null
+  --startup-file "bash /home/site/wwwroot/backend/bin/backend" >/dev/null
 echo "✅ Startup Linux configurado"
 echo ""
 # 7. Deploy
 echo "📤 Deployando JAR..."
-az webapp deployment source config-zip \
+az webapp deploy \
   --resource-group iago-rg \
   --name iago-backend \
-  --src iago-deploy.zip
+  --src-path iago-deploy.zip \
+  --type zip \
+  --restart true
 echo "✅ Deploy enviado!"
 echo ""
 # 8. Aguardar e obter URL

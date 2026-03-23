@@ -1,230 +1,57 @@
-# 🚀 IAgo - Deploy GitHub Pages
+# IAgo - Deploy GitHub Pages
 
-## URL do GitHub Pages
+## URL
 
-```
-https://aniversarioyago.github.io/IAgo/
-```
+`https://aniversarioyago.github.io/IAgo/`
 
----
+## Configuração única no GitHub
 
-## ✅ Alterações Realizadas
+1. Abra `https://github.com/aniversarioyago/IAgo`.
+2. Vá em `Settings -> Pages`.
+3. Source: `Deploy from a branch`.
+4. Branch: `main`.
+5. Folder: `/docs`.
+6. Save.
 
-### 1. Backend CORS ✅
-Atualizado para aceitar requisições do GitHub Pages:
-```kotlin
-origin.startsWith("https://aniversarioyago.github.io") ||
-origin.contains("github.io")
-```
-
-### 2. Frontend index.html ✅
-Agora detecta o ambiente automaticamente e configura a URL do backend
-
-### 3. Script de Deploy ✅
-Criado `deploy_github_pages.sh` para compilar e fazer deploy
-
----
-
-## 🔧 Configuração Necessária
-
-### Pré-requisitos
-1. Repositório GitHub criado: `aniversarioyago/IAgo`
-2. GitHub Pages habilitado (Settings → Pages)
-3. Branch selecionada: `gh-pages` ou `main`
-
-### Habilitar GitHub Pages
-1. Acesse: https://github.com/aniversarioyago/IAgo
-2. Settings → Pages
-3. Source: Deploy from a branch
-4. Branch: `main`
-5. Folder: `/ (root)`
-6. Salvar
-
-> ⚠️ O script publica os arquivos compilados na raiz de `main`. Depois de cada deploy, você precisa fazer commit e push.
-
----
-
-## 🚀 Como Fazer Deploy
-
-### Opção 1: Script Automático (recomendado)
+## Deploy (automatizado)
 
 ```bash
 cd /home/kayque/Repos/IAgo
 chmod +x deploy_github_pages.sh
-./gradlew :composeApp:jsBrowserDistribution -PIAGO_BACKEND_URL="https://seu-backend.com"
 ./deploy_github_pages.sh
-git add -A
-git commit -m "Deploy IAgo"
-git push origin main
 ```
 
-> O script publica os arquivos na raiz de `main`. Os comandos `git` acima enviam para GitHub.
+O script faz:
 
-### Opção 3: GitHub Actions (Automático)
+- build web com `:composeApp:jsBrowserDistribution`
+- sincroniza artefatos para `docs/`
+- cria `docs/.nojekyll`
+- faz `git commit` e `git push` em `main`
 
-Criar arquivo `.github/workflows/deploy.yml`:
+## Backend remoto
 
-```yaml
-name: Deploy to GitHub Pages
+Para web e Android em dispositivos reais, o backend deve estar em HTTPS público.
 
-on:
-  push:
-    branches: [ main ]
+Padrão atual do frontend web:
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: '21'
-      
-      - name: Build
-        run: |
-          ./gradlew wasmJsBrowserDistribution \
-            -PIAGO_BACKEND_URL="https://seu-backend.com:8081"
-      
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./composeApp/build/dist/wasmJs/productionExecutable
-```
+- `https://iago-backend.azurewebsites.net`
 
----
-
-## 🌐 Backend Remoto
-
-Como o GitHub Pages é estático, o backend DEVE estar em um servidor remoto:
-
-### Opções:
-
-1. **Render.com** (Recomendado - Grátis)
-   ```bash
-   ./build_android.sh debug "https://seu-app.onrender.com"
-   ```
-
-2. **Railway.app**
-   ```bash
-   ./build_android.sh debug "https://seu-app.railway.app"
-   ```
-
-3. **Fly.io**
-   ```bash
-   ./build_android.sh debug "https://seu-app.fly.dev"
-   ```
-
-4. **Seu próprio servidor**
-   ```bash
-   ./build_android.sh debug "https://seu-servidor.com:8081"
-   ```
-
----
-
-## 🔐 Configurar Backend Remoto
-
-### Variável de Ambiente
-
-Atualizar `index.html`:
-```javascript
-window.IAGO_BACKEND_URL = "https://seu-backend-remoto.com:8081";
-```
-
-Ou no `build.gradle.kts`:
-```bash
-./gradlew wasmJsBrowserDistribution \
-  -PIAGO_BACKEND_URL="https://seu-backend-remoto.com:8081"
-```
-
----
-
-## 📋 Checklist GitHub Pages
-
-- [ ] Repositório criado em GitHub
-- [ ] GitHub Pages habilitado
-- [ ] Branch `gh-pages` criada ou `main` selecionada
-- [ ] Backend remoto configurado
-- [ ] Backend URL atualizada no index.html
-- [ ] Compilado com deploy_github_pages.sh
-- [ ] Arquivos enviados para GitHub
-- [ ] Website acessível em https://aniversarioyago.github.io/IAgo/
-
----
-
-## 🧪 Testar Deploy
-
-Após fazer push:
+Para usar outro backend no deploy:
 
 ```bash
-# Aguardar 2-5 minutos
-
-# Acessar a URL
-curl https://aniversarioyago.github.io/IAgo/
-
-# Ou abrir no navegador
-open https://aniversarioyago.github.io/IAgo/
+./deploy_github_pages.sh "https://seu-backend.com"
 ```
 
----
-
-## 🐛 Troubleshooting
-
-### "Página não encontrada"
-- Certifique-se que GitHub Pages está habilitado
-- Verifique se a branch está correta
-- Aguarde 5 minutos após push
-
-### "Falha ao conectar com backend"
-- Certifique-se que backend remoto está rodando
-- Verifique CORS no backend
-- Verifique URL em index.html
-
-### "Arquivo não encontrado"
-- Verifique se composeApp.js foi copiado
-- Verifique se todos os arquivos foram enviados
-- Git push foi bem-sucedido?
-
----
-
-## 📱 Versão Android com Backend Remoto
+## Verificação rápida
 
 ```bash
-./build_android.sh debug "https://seu-backend-remoto.com:8081"
-adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk
+curl -i https://aniversarioyago.github.io/IAgo/
+curl -i https://iago-backend.azurewebsites.net/health
+curl -i -X POST https://iago-backend.azurewebsites.net/api/chat -H "Content-Type: application/json" -d '{"message":"Oi"}'
 ```
 
----
+## Troubleshooting
 
-## 🔄 Atualizar Deploy
-
-Sempre que fizer alterações:
-
-```bash
-# 1. Compilar
-./gradlew :composeApp:jsBrowserDistribution -PIAGO_BACKEND_URL="https://seu-backend.com"
-./deploy_github_pages.sh
-
-# 2. Commitar e fazer push para main
-git add -A
-git commit -m "Atualizar IAgo"
-git push origin main
-```
-
----
-
-## ✨ Resumo
-
-**GitHub Pages URL**: https://aniversarioyago.github.io/IAgo/
-
-**Próximas etapas**:
-1. No GitHub: Settings → Pages → main / (root)
-2. Executar `./deploy_github_pages.sh` localmente
-3. Fazer `git add -A && git commit -m "Deploy" && git push origin main`
-4. Aguardar 1-2 minutos
-5. Acessar https://aniversarioyago.github.io/IAgo/
-
-**Status**: ✅ Pronto para fazer deploy!
-
+- Se abrir README: confirme `main` + `/docs` no Pages.
+- Se chat falhar: backend remoto está fora ou sem `GEMINI_API_KEY`.
+- Se Android falhar em rede local: use backend HTTPS remoto, não `localhost`.
