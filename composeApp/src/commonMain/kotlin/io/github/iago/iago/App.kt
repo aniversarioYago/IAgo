@@ -53,22 +53,22 @@ data class ChatMessage(
 )
 
 private val IagoDarkBlueColorScheme = darkColorScheme(
-    primary = Color(0xFF90CAF9),
-    onPrimary = Color(0xFF06233D),
-    primaryContainer = Color(0xFF0D2A47),
-    onPrimaryContainer = Color(0xFFD3E5FF),
-    secondary = Color(0xFFB0C6E6),
-    onSecondary = Color(0xFF1A2C42),
-    secondaryContainer = Color(0xFF24384F),
-    onSecondaryContainer = Color(0xFFD4E4FF),
-    tertiary = Color(0xFF8FD0E8),
-    onTertiary = Color(0xFF003546),
-    surface = Color(0xFF0A1624),
-    onSurface = Color(0xFFE3ECF7),
-    surfaceVariant = Color(0xFF2A3541),
-    onSurfaceVariant = Color(0xFFBDC8D6),
-    background = Color(0xFF08111C),
-    onBackground = Color(0xFFE3ECF7),
+    primary = Color(0xFF7FB8EE),
+    onPrimary = Color(0xFF04213A),
+    primaryContainer = Color(0xFF0A223A),
+    onPrimaryContainer = Color(0xFFD6E9FF),
+    secondary = Color(0xFF9FB8D8),
+    onSecondary = Color(0xFF12273E),
+    secondaryContainer = Color(0xFF1C3248),
+    onSecondaryContainer = Color(0xFFD4E6FF),
+    tertiary = Color(0xFF89CFEF),
+    onTertiary = Color(0xFF003447),
+    surface = Color(0xFF071421),
+    onSurface = Color(0xFFE4EDF9),
+    surfaceVariant = Color(0xFF162638),
+    onSurfaceVariant = Color(0xFFB8C9DC),
+    background = Color(0xFF050E18),
+    onBackground = Color(0xFFE4EDF9),
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
@@ -96,7 +96,7 @@ fun App() {
     MaterialTheme(colorScheme = IagoDarkBlueColorScheme) {
         Column(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(MaterialTheme.colorScheme.background)
                 .safeContentPadding()
                 .fillMaxSize(),
         ) {
