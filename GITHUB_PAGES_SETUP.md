@@ -36,42 +36,29 @@ Criado `deploy_github_pages.sh` para compilar e fazer deploy
 1. Acesse: https://github.com/aniversarioyago/IAgo
 2. Settings → Pages
 3. Source: Deploy from a branch
-4. Branch: `gh-pages` (ou `main` se preferir)
-5. Salvar
+4. Branch: `main`
+5. Folder: `/ (root)`
+6. Salvar
+
+> ⚠️ O script publica os arquivos compilados na raiz de `main`. Depois de cada deploy, você precisa fazer commit e push.
 
 ---
 
 ## 🚀 Como Fazer Deploy
 
-### Opção 1: Script Automático
+### Opção 1: Script Automático (recomendado)
 
 ```bash
 cd /home/kayque/Repos/IAgo
 chmod +x deploy_github_pages.sh
+./gradlew :composeApp:jsBrowserDistribution -PIAGO_BACKEND_URL="https://seu-backend.com"
 ./deploy_github_pages.sh
-```
-
-### Opção 2: Manual
-
-```bash
-cd /home/kayque/Repos/IAgo
-
-# Compilar
-./gradlew wasmJsBrowserDistribution \
-  -PIAGO_BACKEND_URL="https://seu-backend.com:8081"
-
-# Clonar o repositório com gh-pages
-git clone --branch gh-pages https://github.com/aniversarioyago/IAgo.git deploy
-
-# Copiar arquivos compilados
-cp -r composeApp/build/dist/wasmJs/productionExecutable/* deploy/
-
-# Commitar e fazer push
-cd deploy
 git add -A
 git commit -m "Deploy IAgo"
-git push origin gh-pages
+git push origin main
 ```
+
+> O script publica os arquivos na raiz de `main`. Os comandos `git` acima enviam para GitHub.
 
 ### Opção 3: GitHub Actions (Automático)
 
@@ -217,13 +204,13 @@ Sempre que fizer alterações:
 
 ```bash
 # 1. Compilar
-./gradlew wasmJsBrowserDistribution \
-  -PIAGO_BACKEND_URL="https://seu-backend-remoto.com:8081"
+./gradlew :composeApp:jsBrowserDistribution -PIAGO_BACKEND_URL="https://seu-backend.com"
+./deploy_github_pages.sh
 
-# 2. Commitar e fazer push
+# 2. Commitar e fazer push para main
 git add -A
 git commit -m "Atualizar IAgo"
-git push origin gh-pages
+git push origin main
 ```
 
 ---
@@ -233,11 +220,11 @@ git push origin gh-pages
 **GitHub Pages URL**: https://aniversarioyago.github.io/IAgo/
 
 **Próximas etapas**:
-1. Configurar backend remoto
-2. Atualizar URL no código
-3. Executar `./deploy_github_pages.sh`
-4. Fazer push para GitHub
-5. Acessar a URL
+1. No GitHub: Settings → Pages → main / (root)
+2. Executar `./deploy_github_pages.sh` localmente
+3. Fazer `git add -A && git commit -m "Deploy" && git push origin main`
+4. Aguardar 1-2 minutos
+5. Acessar https://aniversarioyago.github.io/IAgo/
 
 **Status**: ✅ Pronto para fazer deploy!
 
