@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -26,15 +25,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -152,7 +153,6 @@ fun App() {
 @Composable
 private fun MessageContent(message: ChatMessage) {
     val blocks = remember(message.text) { parseMessageBlocks(message.text) }
-    val uriHandler = LocalUriHandler.current
 
     Column(modifier = Modifier.padding(12.dp)) {
         blocks.forEachIndexed { index, block ->
@@ -200,21 +200,23 @@ private fun MessageContent(message: ChatMessage) {
 
                             latexPreviewUrl(block.expression)?.let { previewUrl ->
                                 Spacer(modifier = Modifier.height(6.dp))
-                                ClickableText(
+                                Text(
                                     text = buildAnnotatedString {
-                                        withStyle(
-                                            SpanStyle(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                textDecoration = TextDecoration.Underline,
+                                        withLink(
+                                            LinkAnnotation.Url(
+                                                url = previewUrl,
+                                                styles = TextLinkStyles(
+                                                    style = SpanStyle(
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        textDecoration = TextDecoration.Underline,
+                                                    ),
+                                                ),
                                             ),
                                         ) {
                                             append("Abrir renderização")
                                         }
                                     },
                                     style = MaterialTheme.typography.labelMedium,
-                                    onClick = {
-                                        runCatching { uriHandler.openUri(previewUrl) }
-                                    },
                                 )
                             }
                         }
@@ -232,7 +234,6 @@ private fun MessageContent(message: ChatMessage) {
 @Composable
 private fun RenderParagraphBlock(text: String, isError: Boolean) {
     val lines = text.lines().map { it.trimEnd() }.filter { it.isNotBlank() }
-    val uriHandler = LocalUriHandler.current
 
     if (lines.isEmpty()) {
         Text(
@@ -278,7 +279,6 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
                         FormattedTextLine(
                             text = line.drop(2),
                             isError = isError,
-                            uriHandler = uriHandler,
                         )
                     }
                 }
@@ -294,7 +294,6 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
                         FormattedTextLine(
                             text = itemText,
                             isError = isError,
-                            uriHandler = uriHandler,
                         )
                     }
                 }
@@ -308,7 +307,6 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
                         FormattedTextLine(
                             text = line.removePrefix("> "),
                             isError = isError,
-                            uriHandler = uriHandler,
                             style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
                         )
                     }
@@ -322,7 +320,6 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
                     FormattedTextLine(
                         text = line,
                         isError = isError,
-                        uriHandler = uriHandler,
                     )
                 }
             }
@@ -338,19 +335,12 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
 private fun FormattedTextLine(
     text: String,
     isError: Boolean,
-    uriHandler: androidx.compose.ui.platform.UriHandler,
     style: TextStyle = MaterialTheme.typography.bodyMedium,
 ) {
     val annotated = buildFormattedParagraph(text, isError)
-    ClickableText(
+    Text(
         text = annotated,
         style = style.copy(color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface),
-        onClick = { offset ->
-            annotated
-                .getStringAnnotations(tag = "URL", start = offset, end = offset)
-                .firstOrNull()
-                ?.let { annotation -> runCatching { uriHandler.openUri(annotation.item) } }
-        },
     )
 }
 
@@ -393,16 +383,19 @@ private fun buildFormattedParagraph(text: String, isError: Boolean) = buildAnnot
             }
 
             is InlineSegment.Link -> {
-                pushStringAnnotation(tag = "URL", annotation = segment.url)
-                withStyle(
-                    SpanStyle(
-                        color = MaterialTheme.colorScheme.primary,
-                        textDecoration = TextDecoration.Underline,
+                withLink(
+                    LinkAnnotation.Url(
+                        url = segment.url,
+                        styles = TextLinkStyles(
+                            style = SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline,
+                            ),
+                        ),
                     ),
                 ) {
                     append(segment.label)
                 }
-                pop()
             }
         }
     }

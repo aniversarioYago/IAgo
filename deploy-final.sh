@@ -7,6 +7,8 @@ if [ -z "$GEMINI_API_KEY" ]; then
   exit 1
 fi
 
+GEMINI_MODEL_VALUE="${GEMINI_MODEL:-gemini-3.0-flash}"
+
 cd /home/kayque/Repos/IAgo
 
 echo "🚀 DEPLOY IAgo Backend - App Service (sem ACR Tasks)"
@@ -32,8 +34,22 @@ java -jar backend.jar
 STARTUP
 chmod +x startup.sh
 
-# Criar zip
-zip -q -r ../iago-deploy.zip . || true
+# Criar zip com fallback para jar (ambos geram arquivo ZIP válido)
+rm -f ../iago-deploy.zip
+if command -v zip >/dev/null 2>&1; then
+  zip -q -r ../iago-deploy.zip .
+elif command -v jar >/dev/null 2>&1; then
+  jar --create --file ../iago-deploy.zip -C . .
+else
+  echo "❌ Erro: nem 'zip' nem 'jar' estão disponíveis para empacotar o deploy"
+  exit 1
+fi
+
+if [ ! -s ../iago-deploy.zip ]; then
+  echo "❌ Erro: iago-deploy.zip não foi gerado corretamente"
+  exit 1
+fi
+
 cd ..
 echo "✅ Pacote pronto: iago-deploy.zip"
 
@@ -79,6 +95,7 @@ az webapp config appsettings set \
     WEBSITES_PORT=8080 \
     PORT=8080 \
     GEMINI_API_KEY="$GEMINI_API_KEY" \
+    GEMINI_MODEL="$GEMINI_MODEL_VALUE" \
     WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
     SCM_DO_BUILD_DURING_DEPLOYMENT=false
 echo "✅ Variáveis configuradas"

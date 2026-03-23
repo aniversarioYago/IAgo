@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("IAgoBackend")
 
-private const val DEFAULT_MODEL = "gemini-2.5-flash"
+private const val DEFAULT_MODEL = "gemini-3.0-flash"
 private const val API_VERSION = "v1"
 private val DEFAULT_ALLOWED_ORIGINS = setOf("https://aniversarioyago.github.io")
 private const val SYSTEM_INSTRUCTION = "Você é um assistente amigável e útil chamado IAgo. " +
@@ -94,6 +94,8 @@ fun Application.module() {
                 return@post
             }
 
+            val model = System.getenv("GEMINI_MODEL")?.trim().orEmpty().ifBlank { DEFAULT_MODEL }
+
             try {
                 logger.info("Enviando request ao Gemini: $message")
                 
@@ -113,7 +115,7 @@ fun Application.module() {
                 )
                 
                 val response = httpClient.post(
-                    "https://generativelanguage.googleapis.com/$API_VERSION/models/$DEFAULT_MODEL:generateContent?key=$apiKey",
+                    "https://generativelanguage.googleapis.com/$API_VERSION/models/$model:generateContent?key=$apiKey",
                 ) {
                     contentType(ContentType.Application.Json)
                     setBody(GeminiGenerateContentRequest(contents = contents))
