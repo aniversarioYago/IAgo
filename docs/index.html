@@ -20,10 +20,10 @@
 <script>
     (function() {
         // Valor opcional injetado no deploy (substituido pelo script de deploy).
-        const injectedBackendUrl = "__IAGO_BACKEND_URL__";
+        const injectedBackendUrl = "https://iago-backend.azurewebsites.net";
         const defaultBackendUrl = "https://iago-backend.azurewebsites.net";
 
-        if (injectedBackendUrl && injectedBackendUrl !== "__IAGO_BACKEND_URL__") {
+        if (injectedBackendUrl && injectedBackendUrl !== "https://iago-backend.azurewebsites.net") {
             window.IAGO_BACKEND_URL = injectedBackendUrl;
             console.log("IAgo Backend URL (injetada):", window.IAGO_BACKEND_URL);
             return;
