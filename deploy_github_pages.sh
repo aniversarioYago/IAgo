@@ -33,6 +33,10 @@ if [ ! -f "$INDEX_FILE" ]; then
   exit 1
 fi
 
+# Injeta backend no index final para evitar drift entre ambiente e frontend publicado.
+ESCAPED_BACKEND_URL="${BACKEND_URL//&/\\&}"
+sed -i "s|__IAGO_BACKEND_URL__|$ESCAPED_BACKEND_URL|g" "$INDEX_FILE"
+
 mkdir -p "$PAGES_OUTPUT"
 rsync -a --delete "$BUILD_OUTPUT/" "$PAGES_OUTPUT/"
 touch "$PAGES_OUTPUT/.nojekyll"

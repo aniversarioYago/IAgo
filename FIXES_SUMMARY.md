@@ -109,12 +109,12 @@ private fun extractModelReply(response: GeminiGenerateContentResponse): String? 
 
 ```bash
 cd /home/kayque/Repos/IAgo
-PORT=8081 GEMINI_API_KEY="AIzaSyBdCccCTRoAJW7ss58Eclc7IwypNTphS0o" ./gradlew backend:run
+PORT=8081 GEMINI_API_KEY="<SUA_GEMINI_API_KEY>" ./gradlew backend:run
 ```
 
 Or with nohup for persistent background execution:
 ```bash
-nohup bash -c 'PORT=8081 GEMINI_API_KEY="AIzaSyBdCccCTRoAJW7ss58Eclc7IwypNTphS0o" ./gradlew backend:run' > /tmp/backend.log 2>&1 &
+nohup bash -c 'PORT=8081 GEMINI_API_KEY="<SUA_GEMINI_API_KEY>" ./gradlew backend:run' > /tmp/backend.log 2>&1 &
 ```
 
 ## Frontend Configuration

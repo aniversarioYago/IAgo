@@ -30,6 +30,7 @@ private val logger = LoggerFactory.getLogger("IAgoBackend")
 
 private const val DEFAULT_MODEL = "gemini-2.5-flash"
 private const val API_VERSION = "v1"
+private val DEFAULT_ALLOWED_ORIGINS = setOf("https://aniversarioyago.github.io")
 private const val SYSTEM_INSTRUCTION = "Você é um assistente amigável e útil chamado IAgo. " +
     "Sempre responda em português (Brasil), a menos que o usuário peça explicitamente uma resposta em outro idioma. " +
     "Seja conciso, claro e prestativo em suas respostas."
@@ -45,7 +46,7 @@ private val httpClient = HttpClient {
 }
 
 fun main() {
-    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
+    val port = System.getenv("PORT")?.toIntOrNull() ?: 8081
     embeddedServer(Netty, port = port, host = "0.0.0.0") {
         module()
     }.start(wait = true)
@@ -62,7 +63,11 @@ fun Application.module() {
         ?.filter { it.isNotBlank() }
         ?.toSet()
         ?.takeIf { it.isNotEmpty() }
-        ?: setOf("*")
+        ?: DEFAULT_ALLOWED_ORIGINS
+
+    val allowLocalhostCors = System.getenv("IAGO_ALLOW_LOCALHOST_CORS")
+        ?.equals("true", ignoreCase = true)
+        ?: false
 
     routing {
         get("/health") {
@@ -70,12 +75,12 @@ fun Application.module() {
         }
 
         options("/api/chat") {
-            call.appendCorsHeaders(allowedOrigins)
+            call.appendCorsHeaders(allowedOrigins, allowLocalhostCors)
             call.respondText("ok")
         }
 
         post("/api/chat") {
-            call.appendCorsHeaders(allowedOrigins)
+            call.appendCorsHeaders(allowedOrigins, allowLocalhostCors)
             val request = call.receive<ChatRequest>()
             val message = request.message.trim()
             if (message.isBlank()) {
@@ -127,9 +132,12 @@ fun Application.module() {
     }
 }
 
-private fun io.ktor.server.application.ApplicationCall.appendCorsHeaders(allowedOrigins: Set<String>) {
+private fun io.ktor.server.application.ApplicationCall.appendCorsHeaders(
+    allowedOrigins: Set<String>,
+    allowLocalhostCors: Boolean,
+) {
     val requestOrigin = request.headers["Origin"]
-    if (requestOrigin != null && isOriginAllowed(requestOrigin, allowedOrigins)) {
+    if (requestOrigin != null && isOriginAllowed(requestOrigin, allowedOrigins, allowLocalhostCors)) {
         response.headers.append("Access-Control-Allow-Origin", requestOrigin)
         response.headers.append("Vary", "Origin")
     }
@@ -137,14 +145,14 @@ private fun io.ktor.server.application.ApplicationCall.appendCorsHeaders(allowed
     response.headers.append("Access-Control-Allow-Headers", "Content-Type")
 }
 
-private fun isOriginAllowed(origin: String, allowedOrigins: Set<String>): Boolean {
+private fun isOriginAllowed(origin: String, allowedOrigins: Set<String>, allowLocalhostCors: Boolean): Boolean {
     if ("*" in allowedOrigins) return true
     if (origin in allowedOrigins) return true
+    if (!allowLocalhostCors) return false
+
     return origin.startsWith("http://localhost:") ||
         origin.startsWith("http://127.0.0.1:") ||
-        origin.startsWith("http://0.0.0.0:") ||
-        origin.startsWith("https://aniversarioyago.github.io") ||
-        origin.contains("github.io")
+        origin.startsWith("http://0.0.0.0:")
 }
 
 private fun extractModelReply(response: GeminiGenerateContentResponse): String? {

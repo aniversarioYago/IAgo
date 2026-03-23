@@ -49,7 +49,7 @@ curl https://aniversarioyago.github.io/IAgo/
 5. Start: `PORT=$PORT GEMINI_API_KEY=$GEMINI_API_KEY ./gradlew backend:run`
 6. Environment: 
    - PORT: 10000 (ou qualquer)
-   - GEMINI_API_KEY: AIzaSyBdCccCTRoAJW7ss58Eclc7IwypNTphS0o
+   - GEMINI_API_KEY: <SUA_GEMINI_API_KEY>
 
 #### URL será algo como
 ```

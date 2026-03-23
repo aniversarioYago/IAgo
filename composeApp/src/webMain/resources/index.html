@@ -17,19 +17,18 @@
 </svg>
 <script>
     (function() {
-        // Detectar ambiente automaticamente
-        const hostname = window.location.hostname;
+        // Valor opcional injetado no deploy (substituido pelo script de deploy).
+        const injectedBackendUrl = "__IAGO_BACKEND_URL__";
+        const defaultBackendUrl = "https://iago-backend.azurewebsites.net";
 
-        if (hostname === "localhost" || hostname === "127.0.0.1") {
-            // Desenvolvimento local
-            window.IAGO_BACKEND_URL = "http://localhost:8081";
-        } else if (hostname.includes("github.io")) {
-            // GitHub Pages sempre usa backend remoto em HTTPS
-            window.IAGO_BACKEND_URL = "https://iago-backend.azurewebsites.net";
-        } else {
-            // Outros hosts em produção também usam backend remoto
-            window.IAGO_BACKEND_URL = "https://iago-backend.azurewebsites.net";
+        if (injectedBackendUrl && injectedBackendUrl !== "__IAGO_BACKEND_URL__") {
+            window.IAGO_BACKEND_URL = injectedBackendUrl;
+            console.log("IAgo Backend URL (injetada):", window.IAGO_BACKEND_URL);
+            return;
         }
+
+        // Fallback seguro: sempre usar backend remoto via HTTPS.
+        window.IAGO_BACKEND_URL = defaultBackendUrl;
 
         console.log("🤖 IAgo Backend URL:", window.IAGO_BACKEND_URL);
     })();

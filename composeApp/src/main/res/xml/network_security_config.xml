@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Permitir cleartext HTTP para localhost (desenvolvimento) -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-        <domain includeSubdomains="true">0.0.0.0</domain>
-    </domain-config>
-
-    <!-- Domínios de produção devem sempre usar HTTPS -->
-    <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">example.com</domain>
-    </domain-config>
+    <!-- Política padrão segura: bloquear tráfego cleartext HTTP. -->
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>
+
 

@@ -13,11 +13,11 @@ echo ""
 export JAVA_HOME=/home/kayque/.local/share/mise/installs/java/24.0.2
 export PATH=$JAVA_HOME/bin:$PATH
 
-cd "$PROJECT_DIR"
+cd "$PROJECT_DIR" || exit 1
 
 # Opções de build
 BUILD_TYPE=${1:-debug}
-BACKEND_URL=${2:-"http://10.0.2.2:8081"}
+BACKEND_URL=${2:-"https://iago-backend.azurewebsites.net"}
 
 echo "Configurações:"
 echo "  Build Type: $BUILD_TYPE"
@@ -26,7 +26,7 @@ echo ""
 
 if [ "$BUILD_TYPE" = "release" ]; then
     echo "🔨 Compilando APK Release..."
-    ./gradlew assembleRelease -PIAGO_BACKEND_URL=$BACKEND_URL
+    ./gradlew assembleRelease -PIAGO_BACKEND_URL="$BACKEND_URL"
 
     if [ $? -eq 0 ]; then
         APK_PATH="composeApp/build/outputs/apk/release/composeApp-release.apk"
@@ -42,7 +42,7 @@ if [ "$BUILD_TYPE" = "release" ]; then
     fi
 else
     echo "🔨 Compilando APK Debug..."
-    ./gradlew assembleDebug -PIAGO_BACKEND_URL=$BACKEND_URL
+    ./gradlew assembleDebug -PIAGO_BACKEND_URL="$BACKEND_URL"
 
     if [ $? -eq 0 ]; then
         APK_PATH="composeApp/build/outputs/apk/debug/composeApp-debug.apk"
