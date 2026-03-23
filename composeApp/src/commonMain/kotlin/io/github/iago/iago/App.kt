@@ -16,15 +16,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -47,6 +52,31 @@ data class ChatMessage(
     val isError: Boolean = false,
 )
 
+private val IagoDarkBlueColorScheme = darkColorScheme(
+    primary = Color(0xFF90CAF9),
+    onPrimary = Color(0xFF06233D),
+    primaryContainer = Color(0xFF0D2A47),
+    onPrimaryContainer = Color(0xFFD3E5FF),
+    secondary = Color(0xFFB0C6E6),
+    onSecondary = Color(0xFF1A2C42),
+    secondaryContainer = Color(0xFF24384F),
+    onSecondaryContainer = Color(0xFFD4E4FF),
+    tertiary = Color(0xFF8FD0E8),
+    onTertiary = Color(0xFF003546),
+    surface = Color(0xFF0A1624),
+    onSurface = Color(0xFFE3ECF7),
+    surfaceVariant = Color(0xFF2A3541),
+    onSurfaceVariant = Color(0xFFBDC8D6),
+    background = Color(0xFF08111C),
+    onBackground = Color(0xFFE3ECF7),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+)
+
+private val IagoBotTextColor = Color(0xFFE6F1FF)
+
 @Composable
 @Preview
 fun App() {
@@ -63,7 +93,7 @@ fun App() {
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    MaterialTheme {
+    MaterialTheme(colorScheme = IagoDarkBlueColorScheme) {
         Column(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.primaryContainer)
@@ -84,6 +114,20 @@ fun App() {
             ) {
                 items(messages) { message ->
                     val alignment = if (message.fromUser) Alignment.End else Alignment.Start
+                    val bubbleColor = when {
+                        message.isError -> MaterialTheme.colorScheme.errorContainer
+                        message.fromUser -> MaterialTheme.colorScheme.primaryContainer
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                    val bubbleContentColor = when {
+                        message.isError -> MaterialTheme.colorScheme.onErrorContainer
+                        message.fromUser -> MaterialTheme.colorScheme.onPrimaryContainer
+                        else -> IagoBotTextColor
+                    }
+                    val bubbleAccentColor = when {
+                        message.isError -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
+                    }
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = alignment,
@@ -93,8 +137,16 @@ fun App() {
                                 .defaultMinSize(minWidth = 80.dp)
                                 .padding(vertical = 4.dp),
                             shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = bubbleColor,
+                                contentColor = bubbleContentColor,
+                            ),
                         ) {
-                            MessageContent(message = message)
+                            MessageContent(
+                                message = message,
+                                textColor = bubbleContentColor,
+                                accentColor = bubbleAccentColor,
+                            )
                         }
                     }
                 }
@@ -112,9 +164,19 @@ fun App() {
                     modifier = Modifier.weight(1f),
                     label = { Text("Digite sua mensagem") },
                     enabled = !isLoading,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
                 )
                 Button(
                     enabled = input.isNotBlank() && !isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
                     onClick = {
                         val prompt = input.trim()
                         input = ""
@@ -151,24 +213,36 @@ fun App() {
 }
 
 @Composable
-private fun MessageContent(message: ChatMessage) {
+private fun MessageContent(
+    message: ChatMessage,
+    textColor: Color,
+    accentColor: Color,
+) {
     val blocks = remember(message.text) { parseMessageBlocks(message.text) }
 
     Column(modifier = Modifier.padding(12.dp)) {
         blocks.forEachIndexed { index, block ->
             when (block) {
                 is MessageBlock.Paragraph -> {
-                    RenderParagraphBlock(block.text, message.isError)
+                    RenderParagraphBlock(
+                        text = block.text,
+                        isError = message.isError,
+                        textColor = textColor,
+                        accentColor = accentColor,
+                    )
                 }
 
                 is MessageBlock.CodeBlock -> {
-                    Card(shape = RoundedCornerShape(10.dp)) {
+                    Card(
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             block.language?.takeIf { it.isNotBlank() }?.let { language ->
                                 Text(
                                     text = language,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = accentColor,
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                             }
@@ -176,6 +250,7 @@ private fun MessageContent(message: ChatMessage) {
                                 text = block.code,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
+                                color = textColor,
                                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                             )
                         }
@@ -183,18 +258,22 @@ private fun MessageContent(message: ChatMessage) {
                 }
 
                 is MessageBlock.MathBlock -> {
-                    Card(shape = RoundedCornerShape(10.dp)) {
+                    Card(
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text(
                                 text = "LaTeX",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = accentColor,
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "$$${block.expression}$$",
                                 fontFamily = FontFamily.Monospace,
                                 fontStyle = FontStyle.Italic,
+                                color = textColor,
                                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                             )
 
@@ -207,7 +286,7 @@ private fun MessageContent(message: ChatMessage) {
                                                 url = previewUrl,
                                                 styles = TextLinkStyles(
                                                     style = SpanStyle(
-                                                        color = MaterialTheme.colorScheme.primary,
+                                                        color = accentColor,
                                                         textDecoration = TextDecoration.Underline,
                                                     ),
                                                 ),
@@ -232,13 +311,18 @@ private fun MessageContent(message: ChatMessage) {
 }
 
 @Composable
-private fun RenderParagraphBlock(text: String, isError: Boolean) {
+private fun RenderParagraphBlock(
+    text: String,
+    isError: Boolean,
+    textColor: Color,
+    accentColor: Color,
+) {
     val lines = text.lines().map { it.trimEnd() }.filter { it.isNotBlank() }
 
     if (lines.isEmpty()) {
         Text(
             text = "",
-            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            color = textColor,
         )
         return
     }
@@ -248,25 +332,43 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
             when {
                 line.startsWith("### ") -> {
                     Text(
-                        text = buildFormattedParagraph(line.removePrefix("### "), isError),
+                        text = buildFormattedParagraph(
+                            text = line.removePrefix("### "),
+                            isError = isError,
+                            normalColor = textColor,
+                            codeColor = accentColor,
+                            linkColor = accentColor,
+                        ),
                         style = MaterialTheme.typography.titleSmall,
-                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        color = textColor,
                     )
                 }
 
                 line.startsWith("## ") -> {
                     Text(
-                        text = buildFormattedParagraph(line.removePrefix("## "), isError),
+                        text = buildFormattedParagraph(
+                            text = line.removePrefix("## "),
+                            isError = isError,
+                            normalColor = textColor,
+                            codeColor = accentColor,
+                            linkColor = accentColor,
+                        ),
                         style = MaterialTheme.typography.titleMedium,
-                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        color = textColor,
                     )
                 }
 
                 line.startsWith("# ") -> {
                     Text(
-                        text = buildFormattedParagraph(line.removePrefix("# "), isError),
+                        text = buildFormattedParagraph(
+                            text = line.removePrefix("# "),
+                            isError = isError,
+                            normalColor = textColor,
+                            codeColor = accentColor,
+                            linkColor = accentColor,
+                        ),
                         style = MaterialTheme.typography.titleLarge,
-                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        color = textColor,
                     )
                 }
 
@@ -274,11 +376,13 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
                     Row {
                         Text(
                             text = "• ",
-                            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            color = textColor,
                         )
                         FormattedTextLine(
                             text = line.drop(2),
                             isError = isError,
+                            textColor = textColor,
+                            accentColor = accentColor,
                         )
                     }
                 }
@@ -289,11 +393,13 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
                     Row {
                         Text(
                             text = marker,
-                            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            color = textColor,
                         )
                         FormattedTextLine(
                             text = itemText,
                             isError = isError,
+                            textColor = textColor,
+                            accentColor = accentColor,
                         )
                     }
                 }
@@ -302,11 +408,13 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
                     Row(verticalAlignment = Alignment.Top) {
                         Text(
                             text = "| ",
-                            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            color = accentColor,
                         )
                         FormattedTextLine(
                             text = line.removePrefix("> "),
                             isError = isError,
+                            textColor = textColor,
+                            accentColor = accentColor,
                             style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
                         )
                     }
@@ -320,6 +428,8 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
                     FormattedTextLine(
                         text = line,
                         isError = isError,
+                        textColor = textColor,
+                        accentColor = accentColor,
                     )
                 }
             }
@@ -335,19 +445,31 @@ private fun RenderParagraphBlock(text: String, isError: Boolean) {
 private fun FormattedTextLine(
     text: String,
     isError: Boolean,
+    textColor: Color,
+    accentColor: Color,
     style: TextStyle = MaterialTheme.typography.bodyMedium,
 ) {
-    val annotated = buildFormattedParagraph(text, isError)
+    val annotated = buildFormattedParagraph(
+        text = text,
+        isError = isError,
+        normalColor = textColor,
+        codeColor = accentColor,
+        linkColor = accentColor,
+    )
     Text(
         text = annotated,
-        style = style.copy(color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface),
+        style = style.copy(color = textColor),
     )
 }
 
 @Composable
-private fun buildFormattedParagraph(text: String, isError: Boolean) = buildAnnotatedString {
-    val normalColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-    val codeColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+private fun buildFormattedParagraph(
+    text: String,
+    isError: Boolean,
+    normalColor: Color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+    codeColor: Color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+    linkColor: Color = MaterialTheme.colorScheme.primary,
+) = buildAnnotatedString {
     val codeBackground = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
 
     parseInlineSegments(text).forEach { segment ->
@@ -388,7 +510,7 @@ private fun buildFormattedParagraph(text: String, isError: Boolean) = buildAnnot
                         url = segment.url,
                         styles = TextLinkStyles(
                             style = SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
+                                color = linkColor,
                                 textDecoration = TextDecoration.Underline,
                             ),
                         ),
