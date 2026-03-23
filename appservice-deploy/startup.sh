@@ -1,2 +1,2 @@
 #!/bin/bash
-java -jar backend.jar
+exec /home/site/wwwroot/backend/bin/backend

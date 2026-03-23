@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory
 private val logger = LoggerFactory.getLogger("IAgoBackend")
 
 private const val DEFAULT_MODEL = "gemini-3.0-flash"
+private const val FALLBACK_MODEL = "gemini-2.5-flash"
 private const val API_VERSION = "v1"
 private val DEFAULT_ALLOWED_ORIGINS = setOf("https://aniversarioyago.github.io")
 private const val SYSTEM_INSTRUCTION = "Você é um assistente amigável e útil chamado IAgo. " +
@@ -114,15 +115,11 @@ fun Application.module() {
                     ),
                 )
                 
-                val response = httpClient.post(
-                    "https://generativelanguage.googleapis.com/$API_VERSION/models/$model:generateContent?key=$apiKey",
-                ) {
-                    contentType(ContentType.Application.Json)
-                    setBody(GeminiGenerateContentRequest(contents = contents))
-                }.body<GeminiGenerateContentResponse>()
-
-                logger.info("Resposta Gemini recebida: $response")
-                val reply = extractModelReply(response) ?: error("Resposta vazia do Gemini.")
+                val reply = generateReplyWithFallback(
+                    apiKey = apiKey,
+                    preferredModel = model,
+                    contents = contents,
+                )
                 
                 logger.info("Sucesso: $reply")
                 call.respond(ChatResponse(reply = reply, error = null))
@@ -132,6 +129,43 @@ fun Application.module() {
             }
         }
     }
+}
+
+private suspend fun generateReplyWithFallback(
+    apiKey: String,
+    preferredModel: String,
+    contents: List<GeminiContent>,
+): String {
+    val candidates = listOf(preferredModel, FALLBACK_MODEL).distinct()
+    var lastError: Throwable? = null
+
+    for ((index, modelCandidate) in candidates.withIndex()) {
+        try {
+            val response = httpClient.post(
+                "https://generativelanguage.googleapis.com/$API_VERSION/models/$modelCandidate:generateContent?key=$apiKey",
+            ) {
+                contentType(ContentType.Application.Json)
+                setBody(GeminiGenerateContentRequest(contents = contents))
+            }.body<GeminiGenerateContentResponse>()
+
+            logger.info("Resposta Gemini recebida (modelo=$modelCandidate): $response")
+            return extractModelReply(response) ?: error("Resposta vazia do Gemini.")
+        } catch (error: Exception) {
+            lastError = error
+            val message = error.message.orEmpty()
+            val canFallback =
+                message.contains("not found", ignoreCase = true) ||
+                message.contains("not supported", ignoreCase = true)
+
+            if (canFallback && index < candidates.lastIndex) {
+                logger.warn("Modelo indisponível ($modelCandidate). Tentando fallback: ${candidates[index + 1]}")
+                continue
+            }
+            throw error
+        }
+    }
+
+    throw lastError ?: IllegalStateException("Falha ao gerar resposta do Gemini.")
 }
 
 private fun io.ktor.server.application.ApplicationCall.appendCorsHeaders(

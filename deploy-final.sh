@@ -15,22 +15,22 @@ echo "🚀 DEPLOY IAgo Backend - App Service (sem ACR Tasks)"
 echo "====================================================="
 echo ""
 
-# 1. Build local do JAR
-echo "📦 Compilando JAR..."
-./gradlew backend:build -x test --no-daemon -q
-echo "✅ JAR compilado!"
+# 1. Build local da distribuição (bin + libs)
+echo "📦 Compilando distribuição do backend..."
+./gradlew backend:installDist -x test --no-daemon -q
+echo "✅ Distribuição compilada!"
 
 # 2. Preparar deployment
 echo ""
 echo "📋 Preparando pacote de deployment..."
 mkdir -p appservice-deploy
 cd appservice-deploy
-rm -f backend.jar startup.sh web.config
-cp ../backend/build/libs/backend.jar .
+rm -rf backend startup.sh web.config
+cp -r ../backend/build/install/backend ./backend
 
 cat > startup.sh << 'STARTUP'
 #!/bin/bash
-java -jar backend.jar
+exec /home/site/wwwroot/backend/bin/backend
 STARTUP
 chmod +x startup.sh
 
@@ -103,7 +103,7 @@ echo "✅ Variáveis configuradas"
 az webapp config set \
   --name iago-backend \
   --resource-group iago-rg \
-  --startup-file "bash startup.sh" >/dev/null
+  --startup-file "bash /home/site/wwwroot/startup.sh" >/dev/null
 echo "✅ Startup configurado"
 
 # 7. Deploy ZIP
