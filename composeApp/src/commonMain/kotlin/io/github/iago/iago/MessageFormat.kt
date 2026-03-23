@@ -12,6 +12,7 @@ sealed interface InlineSegment {
     data class Italic(val text: String) : InlineSegment
     data class InlineCode(val text: String) : InlineSegment
     data class InlineMath(val text: String) : InlineSegment
+    data class Link(val label: String, val url: String) : InlineSegment
 }
 
 fun parseMessageBlocks(rawText: String): List<MessageBlock> {
@@ -42,7 +43,7 @@ fun parseMessageBlocks(rawText: String): List<MessageBlock> {
             }
 
             val language = rawText.substring(codeStart + 3, headerEnd).trim().ifBlank { null }
-            val codeEnd = rawText.indexOf("\n```", headerEnd + 1)
+            val codeEnd = findClosingFence(rawText, headerEnd + 1)
             if (codeEnd == -1) {
                 addParagraphBlocks(rawText.substring(codeStart), blocks)
                 break
@@ -52,7 +53,7 @@ fun parseMessageBlocks(rawText: String): List<MessageBlock> {
                 .trimEnd('\n', '\r')
                 .trimIndent()
             blocks.add(MessageBlock.CodeBlock(code = code, language = language))
-            cursor = codeEnd + 4
+            cursor = codeEnd + 3
             continue
         }
 
@@ -63,7 +64,9 @@ fun parseMessageBlocks(rawText: String): List<MessageBlock> {
         }
 
         val expression = rawText.substring(nextTokenStart + 2, mathEnd).trim()
-        blocks.add(MessageBlock.MathBlock(expression = expression))
+        if (expression.isNotBlank()) {
+            blocks.add(MessageBlock.MathBlock(expression = expression))
+        }
         cursor = mathEnd + 2
     }
 
@@ -77,7 +80,7 @@ fun parseInlineSegments(text: String): List<InlineSegment> {
     var index = 0
 
     while (index < text.length) {
-        if (text.startsWith("**", index)) {
+        if (text.startsWith("**", index) && !isEscaped(text, index)) {
             val end = text.indexOf("**", index + 2)
             if (end > index + 2) {
                 segments.add(InlineSegment.Bold(text.substring(index + 2, end)))
@@ -86,7 +89,7 @@ fun parseInlineSegments(text: String): List<InlineSegment> {
             }
         }
 
-        if (text[index] == '*') {
+        if (text[index] == '*' && !isEscaped(text, index)) {
             val end = text.indexOf('*', index + 1)
             if (end > index + 1) {
                 segments.add(InlineSegment.Italic(text.substring(index + 1, end)))
@@ -95,7 +98,7 @@ fun parseInlineSegments(text: String): List<InlineSegment> {
             }
         }
 
-        if (text[index] == '`') {
+        if (text[index] == '`' && !isEscaped(text, index)) {
             val end = text.indexOf('`', index + 1)
             if (end > index + 1) {
                 segments.add(InlineSegment.InlineCode(text.substring(index + 1, end)))
@@ -104,12 +107,37 @@ fun parseInlineSegments(text: String): List<InlineSegment> {
             }
         }
 
-        if (text[index] == '$') {
+        if (text[index] == '$' && !isEscaped(text, index)) {
             val end = text.indexOf('$', index + 1)
             if (end > index + 1) {
                 segments.add(InlineSegment.InlineMath(text.substring(index + 1, end)))
                 index = end + 1
                 continue
+            }
+        }
+
+        if (text.startsWith("\\(", index) && !isEscaped(text, index)) {
+            val end = text.indexOf("\\)", index + 2)
+            if (end > index + 2) {
+                segments.add(InlineSegment.InlineMath(text.substring(index + 2, end)))
+                index = end + 2
+                continue
+            }
+        }
+
+        if (text[index] == '[' && !isEscaped(text, index)) {
+            val labelEnd = text.indexOf(']', index + 1)
+            if (labelEnd > index + 1 && labelEnd + 1 < text.length && text[labelEnd + 1] == '(') {
+                val urlEnd = text.indexOf(')', labelEnd + 2)
+                if (urlEnd > labelEnd + 2) {
+                    val label = text.substring(index + 1, labelEnd)
+                    val url = text.substring(labelEnd + 2, urlEnd).trim()
+                    if (url.startsWith("http://") || url.startsWith("https://")) {
+                        segments.add(InlineSegment.Link(label = label, url = url))
+                        index = urlEnd + 1
+                        continue
+                    }
+                }
             }
         }
 
@@ -130,15 +158,46 @@ private fun addParagraphBlocks(chunk: String, blocks: MutableList<MessageBlock>)
         .forEach { blocks.add(MessageBlock.Paragraph(it)) }
 }
 
+private fun findClosingFence(text: String, codeStart: Int): Int {
+    var scan = codeStart
+    while (scan < text.length) {
+        val fence = text.indexOf("```", scan)
+        if (fence == -1) return -1
+        val startsLine = fence == 0 || text[fence - 1] == '\n' || text[fence - 1] == '\r'
+        if (startsLine) return fence
+        scan = fence + 3
+    }
+    return -1
+}
+
+private fun isEscaped(text: String, index: Int): Boolean {
+    if (index == 0) return false
+    var slashCount = 0
+    var cursor = index - 1
+    while (cursor >= 0 && text[cursor] == '\\') {
+        slashCount++
+        cursor--
+    }
+    return slashCount % 2 == 1
+}
+
 private fun findNextSpecialIndex(text: String, start: Int): Int? {
     var i = start
     while (i < text.length) {
-        if (text[i] == '*' || text[i] == '`' || text[i] == '$') {
+        if (
+            text[i] == '*' ||
+            text[i] == '`' ||
+            text[i] == '$' ||
+            text[i] == '[' ||
+            (text[i] == '\\' && i + 1 < text.length && text[i + 1] == '(')
+        ) {
             return i
         }
         i++
     }
     return null
 }
+
+
 
 

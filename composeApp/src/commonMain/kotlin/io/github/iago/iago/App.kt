@@ -13,22 +13,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -146,15 +152,13 @@ fun App() {
 @Composable
 private fun MessageContent(message: ChatMessage) {
     val blocks = remember(message.text) { parseMessageBlocks(message.text) }
+    val uriHandler = LocalUriHandler.current
 
     Column(modifier = Modifier.padding(12.dp)) {
         blocks.forEachIndexed { index, block ->
             when (block) {
                 is MessageBlock.Paragraph -> {
-                    Text(
-                        text = buildFormattedParagraph(block.text, message.isError),
-                        color = if (message.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                    )
+                    RenderParagraphBlock(block.text, message.isError)
                 }
 
                 is MessageBlock.CodeBlock -> {
@@ -170,6 +174,7 @@ private fun MessageContent(message: ChatMessage) {
                             }
                             Text(
                                 text = block.code,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
                                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                             )
@@ -179,14 +184,40 @@ private fun MessageContent(message: ChatMessage) {
 
                 is MessageBlock.MathBlock -> {
                     Card(shape = RoundedCornerShape(10.dp)) {
-                        Text(
-                            text = block.expression,
-                            fontFamily = FontFamily.Monospace,
-                            fontStyle = FontStyle.Italic,
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .horizontalScroll(rememberScrollState()),
-                        )
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "LaTeX",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "$$${block.expression}$$",
+                                fontFamily = FontFamily.Monospace,
+                                fontStyle = FontStyle.Italic,
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            )
+
+                            latexPreviewUrl(block.expression)?.let { previewUrl ->
+                                Spacer(modifier = Modifier.height(6.dp))
+                                ClickableText(
+                                    text = buildAnnotatedString {
+                                        withStyle(
+                                            SpanStyle(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                textDecoration = TextDecoration.Underline,
+                                            ),
+                                        ) {
+                                            append("Abrir renderização")
+                                        }
+                                    },
+                                    style = MaterialTheme.typography.labelMedium,
+                                    onClick = {
+                                        runCatching { uriHandler.openUri(previewUrl) }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -199,9 +230,135 @@ private fun MessageContent(message: ChatMessage) {
 }
 
 @Composable
+private fun RenderParagraphBlock(text: String, isError: Boolean) {
+    val lines = text.lines().map { it.trimEnd() }.filter { it.isNotBlank() }
+    val uriHandler = LocalUriHandler.current
+
+    if (lines.isEmpty()) {
+        Text(
+            text = "",
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+        )
+        return
+    }
+
+    Column {
+        lines.forEachIndexed { index, line ->
+            when {
+                line.startsWith("### ") -> {
+                    Text(
+                        text = buildFormattedParagraph(line.removePrefix("### "), isError),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                line.startsWith("## ") -> {
+                    Text(
+                        text = buildFormattedParagraph(line.removePrefix("## "), isError),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                line.startsWith("# ") -> {
+                    Text(
+                        text = buildFormattedParagraph(line.removePrefix("# "), isError),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                line.startsWith("- ") || line.startsWith("* ") -> {
+                    Row {
+                        Text(
+                            text = "• ",
+                            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        )
+                        FormattedTextLine(
+                            text = line.drop(2),
+                            isError = isError,
+                            uriHandler = uriHandler,
+                        )
+                    }
+                }
+
+                line.matches(Regex("^\\d+\\.\\s+.+")) -> {
+                    val marker = line.substringBefore(' ') + " "
+                    val itemText = line.substringAfter(' ', "")
+                    Row {
+                        Text(
+                            text = marker,
+                            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        )
+                        FormattedTextLine(
+                            text = itemText,
+                            isError = isError,
+                            uriHandler = uriHandler,
+                        )
+                    }
+                }
+
+                line.startsWith("> ") -> {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Text(
+                            text = "| ",
+                            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        )
+                        FormattedTextLine(
+                            text = line.removePrefix("> "),
+                            isError = isError,
+                            uriHandler = uriHandler,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+                        )
+                    }
+                }
+
+                line.matches(Regex("^(-{3,}|\\*{3,}|_{3,})$")) -> {
+                    HorizontalDivider()
+                }
+
+                else -> {
+                    FormattedTextLine(
+                        text = line,
+                        isError = isError,
+                        uriHandler = uriHandler,
+                    )
+                }
+            }
+
+            if (index < lines.lastIndex) {
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun FormattedTextLine(
+    text: String,
+    isError: Boolean,
+    uriHandler: androidx.compose.ui.platform.UriHandler,
+    style: TextStyle = MaterialTheme.typography.bodyMedium,
+) {
+    val annotated = buildFormattedParagraph(text, isError)
+    ClickableText(
+        text = annotated,
+        style = style.copy(color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface),
+        onClick = { offset ->
+            annotated
+                .getStringAnnotations(tag = "URL", start = offset, end = offset)
+                .firstOrNull()
+                ?.let { annotation -> runCatching { uriHandler.openUri(annotation.item) } }
+        },
+    )
+}
+
+@Composable
 private fun buildFormattedParagraph(text: String, isError: Boolean) = buildAnnotatedString {
     val normalColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     val codeColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val codeBackground = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
 
     parseInlineSegments(text).forEach { segment ->
         when (segment) {
@@ -218,6 +375,8 @@ private fun buildFormattedParagraph(text: String, isError: Boolean) = buildAnnot
                 SpanStyle(
                     fontFamily = FontFamily.Monospace,
                     color = codeColor,
+                    background = codeBackground,
+                    fontSynthesis = FontSynthesis.None,
                 ),
             ) {
                 append(segment.text)
@@ -231,6 +390,19 @@ private fun buildFormattedParagraph(text: String, isError: Boolean) = buildAnnot
                 ),
             ) {
                 append(segment.text)
+            }
+
+            is InlineSegment.Link -> {
+                pushStringAnnotation(tag = "URL", annotation = segment.url)
+                withStyle(
+                    SpanStyle(
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = TextDecoration.Underline,
+                    ),
+                ) {
+                    append(segment.label)
+                }
+                pop()
             }
         }
     }
