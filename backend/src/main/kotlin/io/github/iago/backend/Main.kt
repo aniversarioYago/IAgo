@@ -216,7 +216,7 @@ private fun mapGeminiErrorMessage(error: GeminiError): String {
     val exceededQuota = isQuotaExceededMessage(rawMessage)
 
     if (exceededQuota) {
-        return "Voce ultrapassou o limite diario de 20 requisicoes."
+        return "Você ultrapassou o limite diário de 20 requisições."
     }
 
     return "Erro da API: ${error.message} (${error.status})"
@@ -225,7 +225,7 @@ private fun mapGeminiErrorMessage(error: GeminiError): String {
 private fun mapUnhandledGeminiExceptionMessage(error: Throwable): String {
     val rawMessage = error.message.orEmpty()
     if (isQuotaExceededMessage(rawMessage)) {
-        return "Voce ultrapassou o limite diario de 20 requisicoes."
+        return "Você ultrapassou o limite diário de 20 requisições."
     }
     return rawMessage.ifBlank { "Falha no backend." }
 }
