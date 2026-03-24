@@ -125,7 +125,10 @@ fun Application.module() {
                 call.respond(ChatResponse(reply = reply, error = null))
             } catch (error: Exception) {
                 logger.error("Erro: ${error.message}")
-                call.respond(HttpStatusCode.BadGateway, ChatResponse(reply = "", error = error.message ?: "Falha no backend."))
+                call.respond(
+                    HttpStatusCode.BadGateway,
+                    ChatResponse(reply = "", error = mapUnhandledGeminiExceptionMessage(error)),
+                )
             }
         }
     }
@@ -193,7 +196,7 @@ private fun isOriginAllowed(origin: String, allowedOrigins: Set<String>, allowLo
 
 private fun extractModelReply(response: GeminiGenerateContentResponse): String? {
     if (response.error != null) {
-        error("Erro da API Gemini: ${response.error.message} (${response.error.status})")
+        error(mapGeminiErrorMessage(response.error))
     }
     
     return response.candidates
@@ -206,6 +209,30 @@ private fun extractModelReply(response: GeminiGenerateContentResponse): String? 
         ?.text
         ?.trim()
         ?.takeIf { it.isNotEmpty() }
+}
+
+private fun mapGeminiErrorMessage(error: GeminiError): String {
+    val rawMessage = error.message.orEmpty()
+    val exceededQuota = isQuotaExceededMessage(rawMessage)
+
+    if (exceededQuota) {
+        return "Voce ultrapassou o limite diario de 20 requisicoes."
+    }
+
+    return "Erro da API: ${error.message} (${error.status})"
+}
+
+private fun mapUnhandledGeminiExceptionMessage(error: Throwable): String {
+    val rawMessage = error.message.orEmpty()
+    if (isQuotaExceededMessage(rawMessage)) {
+        return "Voce ultrapassou o limite diario de 20 requisicoes."
+    }
+    return rawMessage.ifBlank { "Falha no backend." }
+}
+
+private fun isQuotaExceededMessage(rawMessage: String): Boolean {
+    return rawMessage.contains("exceeded your current quota", ignoreCase = true) ||
+        rawMessage.contains("rate-limits", ignoreCase = true)
 }
 
 @Serializable
