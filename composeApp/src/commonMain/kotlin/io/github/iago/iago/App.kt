@@ -103,6 +103,7 @@ fun App() {
             Text(
                 text = "IAgo",
                 style = MaterialTheme.typography.headlineSmall,
+                color = IagoBotTextColor,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
 
