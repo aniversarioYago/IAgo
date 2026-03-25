@@ -116,13 +116,13 @@ fun App() {
                     val alignment = if (message.fromUser) Alignment.End else Alignment.Start
                     val bubbleColor = when {
                         message.isError -> MaterialTheme.colorScheme.errorContainer
-                        message.fromUser -> MaterialTheme.colorScheme.primaryContainer
-                        else -> MaterialTheme.colorScheme.surfaceVariant
+                        message.fromUser -> MaterialTheme.colorScheme.surfaceVariant
+                        else -> MaterialTheme.colorScheme.primaryContainer
                     }
                     val bubbleContentColor = when {
                         message.isError -> MaterialTheme.colorScheme.onErrorContainer
-                        message.fromUser -> MaterialTheme.colorScheme.onPrimaryContainer
-                        else -> IagoBotTextColor
+                        message.fromUser -> IagoBotTextColor
+                        else -> MaterialTheme.colorScheme.onPrimaryContainer
                     }
                     val bubbleAccentColor = when {
                         message.isError -> MaterialTheme.colorScheme.error
