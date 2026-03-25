@@ -117,12 +117,12 @@ fun App() {
                     val bubbleColor = when {
                         message.isError -> MaterialTheme.colorScheme.errorContainer
                         message.fromUser -> MaterialTheme.colorScheme.surfaceVariant
-                        else -> MaterialTheme.colorScheme.primaryContainer
+                        else -> MaterialTheme.colorScheme.background
                     }
                     val bubbleContentColor = when {
                         message.isError -> MaterialTheme.colorScheme.onErrorContainer
                         message.fromUser -> IagoBotTextColor
-                        else -> MaterialTheme.colorScheme.onPrimaryContainer
+                        else -> MaterialTheme.colorScheme.onBackground
                     }
                     val bubbleAccentColor = when {
                         message.isError -> MaterialTheme.colorScheme.error
