@@ -8,6 +8,7 @@ if [ -z "$GEMINI_API_KEY" ]; then
 fi
 
 GEMINI_MODEL_VALUE="${GEMINI_MODEL:-gemini-3.0-flash}"
+IAGO_ALLOWED_ORIGINS_VALUE="${IAGO_ALLOWED_ORIGINS:-http://ia-go.me,https://ia-go.me,http://www.ia-go.me,https://www.ia-go.me,https://aniversarioyago.github.io}"
 
 cd /home/kayque/Repos/IAgo
 
@@ -96,6 +97,7 @@ az webapp config appsettings set \
     PORT=8080 \
     GEMINI_API_KEY="$GEMINI_API_KEY" \
     GEMINI_MODEL="$GEMINI_MODEL_VALUE" \
+    IAGO_ALLOWED_ORIGINS="$IAGO_ALLOWED_ORIGINS_VALUE" \
     WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
     SCM_DO_BUILD_DURING_DEPLOYMENT=false
 echo "✅ Variáveis configuradas"

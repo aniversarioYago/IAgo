@@ -6,6 +6,8 @@ if [ -z "${GEMINI_API_KEY:-}" ]; then
     exit 1
 fi
 cd /home/kayque/Repos/IAgo
+
+IAGO_ALLOWED_ORIGINS_VALUE="${IAGO_ALLOWED_ORIGINS:-http://ia-go.me,https://ia-go.me,http://www.ia-go.me,https://www.ia-go.me,https://aniversarioyago.github.io}"
 echo "🚀 DEPLOY IAgo Backend no Azure App Service"
 echo "============================================"
 echo ""
@@ -77,6 +79,7 @@ az webapp config appsettings set \
     WEBSITES_PORT=8080 \
     PORT=8080 \
     GEMINI_API_KEY="$GEMINI_API_KEY" \
+    IAGO_ALLOWED_ORIGINS="$IAGO_ALLOWED_ORIGINS_VALUE" \
     WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
     SCM_DO_BUILD_DURING_DEPLOYMENT=false
 echo "✅ Variáveis configuradas"

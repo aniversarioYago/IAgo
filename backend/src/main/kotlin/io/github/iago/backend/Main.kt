@@ -31,7 +31,13 @@ private val logger = LoggerFactory.getLogger("IAgoBackend")
 private const val DEFAULT_MODEL = "gemini-3.0-flash"
 private const val FALLBACK_MODEL = "gemini-2.5-flash"
 private const val API_VERSION = "v1"
-private val DEFAULT_ALLOWED_ORIGINS = setOf("https://aniversarioyago.github.io")
+private val DEFAULT_ALLOWED_ORIGINS = setOf(
+    "https://aniversarioyago.github.io",
+    "http://ia-go.me",
+    "https://ia-go.me",
+    "http://www.ia-go.me",
+    "https://www.ia-go.me",
+)
 private const val SYSTEM_INSTRUCTION = "Você é um assistente amigável e útil chamado IAgo. " +
     "Sempre responda em português (Brasil), a menos que o usuário peça explicitamente uma resposta em outro idioma. " +
     "Seja conciso, claro e prestativo em suas respostas."
